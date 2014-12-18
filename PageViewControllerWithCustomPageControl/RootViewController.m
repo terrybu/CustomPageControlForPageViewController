@@ -38,9 +38,7 @@
     
     SELECTOR_WIDTH = self.view.frame.size.width/2;
     SELECTOR_Y = self.navigationController.navigationBar.frame.size.height + Y_OFFSET_BELOW_NAVBAR + HEIGHT;
-    
-    self.navigationController.navigationBarHidden = YES;
-    
+        
     UIPageControl *pageControl = [UIPageControl appearance];
     pageControl.pageIndicatorTintColor = [UIColor blackColor];
     pageControl.currentPageIndicatorTintColor = [UIColor redColor];
