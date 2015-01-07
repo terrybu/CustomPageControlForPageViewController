@@ -12,10 +12,12 @@
 #define Y_BUFFER 14 //%%% number of pixels on top of the segment
 #define HEIGHT 30 //%%% height of the segment
 #define ANIMATION_SPEED 0.2 //%%% the number of seconds it takes to complete the animation
-#define SELECTOR_Y_BUFFER 40 //%%% the y-value of the bar that shows what page you are on (0 is the top)
 #define SELECTOR_HEIGHT 4 //%%% thickness of the selector bar
 #define X_OFFSET 12
 #define Y_OFFSET_BELOW_NAVBAR 21.7
+
+typedef void (^moveSelectorBarLeftBlockType)(void);
+typedef void (^moveSelectorBarRightBlockType)(void);
 
 @interface RootViewController () {
     
@@ -23,6 +25,11 @@
     UIView *selectionBar;
     int SELECTOR_WIDTH;
     int SELECTOR_Y;
+    UIButton *leftButton;
+    UIButton *rightButton;
+    
+    moveSelectorBarLeftBlockType moveSelectorBarLeft;
+    moveSelectorBarRightBlockType moveSelectorBarRight;
     
     UIViewController *firstVC;
     UIViewController *secondVC;
@@ -35,6 +42,33 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     // Do any additional setup after loading the view.
+    moveSelectorBarLeft = ^{
+        [UIView animateWithDuration: ANIMATION_SPEED
+                              delay: 0
+                            options: UIViewAnimationOptionTransitionNone
+                         animations:^{
+                             leftButton.backgroundColor = [UIColor orangeColor];
+                             rightButton.backgroundColor = nil;
+                             selectionBar.frame = CGRectMake(0, HEIGHT, SELECTOR_WIDTH, SELECTOR_HEIGHT);
+                         }
+                         completion:^(BOOL finished){
+                         }];
+    };
+    
+    moveSelectorBarRight =  ^{
+        [UIView animateWithDuration: ANIMATION_SPEED
+                              delay: 0
+                            options: UIViewAnimationOptionTransitionNone
+                         animations:^{
+                             rightButton.backgroundColor = [UIColor orangeColor];
+                             leftButton.backgroundColor = nil;
+                             selectionBar.frame = CGRectMake(SELECTOR_WIDTH, HEIGHT, SELECTOR_WIDTH + X_OFFSET, SELECTOR_HEIGHT);
+                         }
+                         completion:^(BOOL finished){
+                         }];
+    };
+
+    
     
     SELECTOR_WIDTH = self.view.frame.size.width/2;
     SELECTOR_Y = self.navigationController.navigationBar.frame.size.height + Y_OFFSET_BELOW_NAVBAR + HEIGHT;
@@ -67,28 +101,25 @@
     
     self.pageControlCustomView = [[UIView alloc] initWithFrame:(CGRectMake(0, self.navigationController.navigationBar.frame.size.height + Y_OFFSET_BELOW_NAVBAR, self.view.frame.size.width, HEIGHT + SELECTOR_HEIGHT))];
     
-    UIButton *leftButton = [[UIButton alloc]initWithFrame:CGRectMake(0, 0, self.pageControlCustomView.frame.size.width/2, HEIGHT)];
-    UIButton *rightButton = [[UIButton alloc]initWithFrame:CGRectMake(self.pageControlCustomView.frame.size.width/2, 0, self.view.frame.size.width/2+X_OFFSET, HEIGHT)];
+    leftButton = [[UIButton alloc]initWithFrame:CGRectMake(0, 0, self.pageControlCustomView.frame.size.width/2, HEIGHT)];
+    rightButton = [[UIButton alloc]initWithFrame:CGRectMake(self.pageControlCustomView.frame.size.width/2, 0, self.view.frame.size.width/2+X_OFFSET, HEIGHT)];
     
     selectionBar = [[UIView alloc]initWithFrame:CGRectMake(0, 0 + HEIGHT, SELECTOR_WIDTH, SELECTOR_HEIGHT)];
     selectionBar.backgroundColor = [UIColor lightGrayColor];
     selectionBar.alpha = 0.8;
     
-    leftButton.tag = 0;
-    rightButton.tag = 1;
-    
     leftButton.backgroundColor = [UIColor whiteColor];
     [leftButton setTitleColor:[UIColor blackColor] forState:UIControlStateNormal];
     leftButton.layer.borderWidth = 0.8;
     leftButton.layer.borderColor = [UIColor blackColor].CGColor;
-    [leftButton addTarget:self action:@selector(someActionOne:) forControlEvents:UIControlEventTouchUpInside];
+    [leftButton addTarget:self action:@selector(tappedLeft:) forControlEvents:UIControlEventTouchUpInside];
     [leftButton setTitle:@"First Baby" forState:UIControlStateNormal];
     
     rightButton.backgroundColor = [UIColor whiteColor];
     [rightButton setTitleColor:[UIColor blackColor] forState:UIControlStateNormal];
     rightButton.layer.borderWidth = 0.8;
     rightButton.layer.borderColor = [UIColor blackColor].CGColor;
-    [rightButton addTarget:self action:@selector(someActionTwo:) forControlEvents:UIControlEventTouchUpInside];
+    [rightButton addTarget:self action:@selector(tappedRight:) forControlEvents:UIControlEventTouchUpInside];
     [rightButton setTitle:@"Second Baby" forState:UIControlStateNormal];
     
     [self.pageControlCustomView addSubview:leftButton];
@@ -97,32 +128,20 @@
     [self.pageViewController.view addSubview: self.pageControlCustomView];
 }
 
-- (IBAction) someActionOne:(id)sender {
+- (IBAction) tappedLeft:(id)sender {
     [self.pageViewController setViewControllers:@[firstVC] direction:UIPageViewControllerNavigationDirectionReverse animated:YES completion:nil];
     
-    [UIView animateWithDuration: ANIMATION_SPEED
-                          delay:0.1
-                        options: nil
-                     animations:^{
-                         
-                         selectionBar.frame = CGRectMake(0, HEIGHT, SELECTOR_WIDTH, SELECTOR_HEIGHT);
-                     }
-                     completion:^(BOOL finished){
-                     }];
+    leftButton.backgroundColor = [UIColor orangeColor];
+    rightButton.backgroundColor = nil;
+    moveSelectorBarLeft();
     
 }
-- (IBAction) someActionTwo:(id)sender {
+- (IBAction) tappedRight:(id)sender {
     [self.pageViewController setViewControllers:@[secondVC] direction:UIPageViewControllerNavigationDirectionForward animated:YES completion:nil];
     
-    [UIView animateWithDuration: ANIMATION_SPEED
-                          delay:0.1
-                        options: nil
-                     animations:^{
-                         
-                         selectionBar.frame = CGRectMake(SELECTOR_WIDTH, HEIGHT, SELECTOR_WIDTH + X_OFFSET, SELECTOR_HEIGHT);
-                     }
-                     completion:^(BOOL finished){
-                     }];
+    leftButton.backgroundColor = nil;
+    rightButton.backgroundColor = [UIColor orangeColor];
+    moveSelectorBarRight();
 }
 
 
@@ -146,32 +165,16 @@
     return nil;
 }
 
-- (void)pageViewController:(UIPageViewController *)pageViewController willTransitionToViewControllers:(NSArray *)pendingViewControllers {
-    
-    
-    if (pendingViewControllers[0] == secondVC) {
-        [UIView animateWithDuration: ANIMATION_SPEED
-                              delay:0.1
-                            options: nil
-                         animations:^{
-                             
-                             selectionBar.frame = CGRectMake(SELECTOR_WIDTH, HEIGHT, SELECTOR_WIDTH + X_OFFSET, SELECTOR_HEIGHT);
-                         }
-                         completion:^(BOOL finished){
-                         }];
+
+- (void)pageViewController:(UIPageViewController *)pageViewController didFinishAnimating:(BOOL)finished previousViewControllers:(NSArray *)previousViewControllers transitionCompleted:(BOOL)completed {
+    if (completed) {
+        if (previousViewControllers[0] == secondVC) {
+            moveSelectorBarLeft();
+        }
+        else {
+            moveSelectorBarRight();
+        }
     }
-    else {
-        [UIView animateWithDuration: ANIMATION_SPEED
-                              delay:0.1
-                            options: nil
-                         animations:^{
-                             
-                             selectionBar.frame = CGRectMake(0, HEIGHT, SELECTOR_WIDTH, SELECTOR_HEIGHT);
-                         }
-                         completion:^(BOOL finished){
-                         }];
-    }
-    
 }
 
 - (void)didReceiveMemoryWarning {
